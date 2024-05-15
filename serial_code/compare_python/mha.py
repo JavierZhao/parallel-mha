@@ -21,21 +21,30 @@ num_heads = 4
 batch_size = 2
 
 # Initialize random input
-x = torch.randn(batch_size, embed_dim, dtype=torch.float32)  # Ensure input is float32
+x = torch.randn(batch_size, embed_dim, dtype=torch.float64)  # Ensure input is float64
 
 # Initialize the Multi-Head Attention layer
 mha = MultiHeadAttention(embed_dim, num_heads)
+
+# Convert weights to float64
+with torch.no_grad():
+    mha.mha.in_proj_weight = nn.Parameter(mha.mha.in_proj_weight.to(torch.float64))
+    mha.mha.in_proj_bias = nn.Parameter(mha.mha.in_proj_bias.to(torch.float64))
+    mha.mha.out_proj.weight = nn.Parameter(mha.mha.out_proj.weight.to(torch.float64))
+    mha.mha.out_proj.bias = nn.Parameter(mha.mha.out_proj.bias.to(torch.float64))
+
+# Print weight data types to verify
+print("in_proj_weight dtype:", mha.mha.in_proj_weight.dtype)
+print("in_proj_bias dtype:", mha.mha.in_proj_bias.dtype)
+print("out_proj_weight dtype:", mha.mha.out_proj.weight.dtype)
+print("out_proj_bias dtype:", mha.mha.out_proj.bias.dtype)
 
 # Run MHA
 output, _ = mha(x)
 
 # Extract initial weights
-Wqkv = (
-    mha.mha.in_proj_weight.detach().numpy().astype(np.float32)
-)  # Ensure weights are float32
-Wo = (
-    mha.mha.out_proj.weight.detach().numpy().astype(np.float32)
-)  # Ensure weights are float32
+Wqkv = mha.mha.in_proj_weight.detach().numpy()  # Ensure weights are float64
+Wo = mha.mha.out_proj.weight.detach().numpy()  # Ensure weights are float64
 
 # Split Wqkv into Wq, Wk, Wv
 Wq = Wqkv[:embed_dim, :]
@@ -47,11 +56,12 @@ np.savez("mha_weights.npz", Wq=Wq, Wk=Wk, Wv=Wv, Wo=Wo)
 np.save("mha_input.npy", x.detach().numpy())
 np.save("mha_output.npy", output.detach().numpy())
 
-print("Saved weights, input, and output.")
-
+# Print data types to verify
 print("Wq dtype:", Wq.dtype)
 print("Wk dtype:", Wk.dtype)
 print("Wv dtype:", Wv.dtype)
 print("Wo dtype:", Wo.dtype)
 print("x dtype:", x.detach().numpy().dtype)
 print("output dtype:", output.detach().numpy().dtype)
+
+print("Saved weights, input, and output.")
