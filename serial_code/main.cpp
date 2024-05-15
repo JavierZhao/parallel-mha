@@ -21,7 +21,9 @@ int main() {
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
 
+    std::cout << "Input:\n" << x << std::endl;
     std::cout << "Output:\n" << output << std::endl;
+    std::cout << "Output shape: " << output.rows() << " x " << output.cols() << std::endl;
     std::cout << "Execution time: " << duration.count() << " seconds\n";
     std::cout << "Model dimensions: num_heads = " << num_heads << ", d_model = " << d_model << std::endl;
     std::cout << "Matrix dimensions: batch_size = " << batch_size << std::endl;
