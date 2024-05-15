@@ -17,6 +17,12 @@ int main() {
     cnpy::NpyArray arr_Wv = weights["Wv"];
     cnpy::NpyArray arr_Wo = weights["Wo"];
 
+    // Print dimensions of loaded weights
+    std::cout << "Wq shape: " << arr_Wq.shape[0] << " x " << arr_Wq.shape[1] << std::endl;
+    std::cout << "Wk shape: " << arr_Wk.shape[0] << " x " << arr_Wk.shape[1] << std::endl;
+    std::cout << "Wv shape: " << arr_Wv.shape[0] << " x " << arr_Wv.shape[1] << std::endl;
+    std::cout << "Wo shape: " << arr_Wo.shape[0] << " x " << arr_Wo.shape[1] << std::endl;
+
     // Convert to Eigen matrices
     MatrixXd Wq = Eigen::Map<MatrixXd>(arr_Wq.data<double>(), d_model, d_model);
     MatrixXd Wk = Eigen::Map<MatrixXd>(arr_Wk.data<double>(), d_model, d_model);
@@ -28,6 +34,9 @@ int main() {
     // Load input matrix x from the npy file
     cnpy::NpyArray arr_x = cnpy::npy_load("mha_input.npy");
     MatrixXd x = Eigen::Map<MatrixXd>(arr_x.data<double>(), batch_size, d_model);
+
+    // Print dimensions of loaded input
+    std::cout << "Input x shape: " << arr_x.shape[0] << " x " << arr_x.shape[1] << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
 
