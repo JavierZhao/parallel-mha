@@ -62,11 +62,11 @@ Wq = Wqkv[:embed_dim, :]
 Wk = Wqkv[embed_dim : 2 * embed_dim, :]
 Wv = Wqkv[2 * embed_dim :, :]
 
-# Transpose Wq, Wk, Wv, Wo
-Wq = Wq.T
-Wk = Wk.T
-Wv = Wv.T
-Wo = Wo.T
+# # Transpose Wq, Wk, Wv, Wo
+# Wq = Wq.T
+# Wk = Wk.T
+# Wv = Wv.T
+# Wo = Wo.T
 
 # Split bqkv into bq, bk, bv
 bq = bqkv[:embed_dim]
