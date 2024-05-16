@@ -84,6 +84,21 @@ MatrixXd MultiHeadAttention::compute(const MatrixXd& x) {
         V_heads[i] = (x * Wv[i]).rowwise() + bv[i].transpose();
     }
 
+    std::cout << "Checking Q: \n";
+    for (int i = 0; i < num_heads; ++i) {
+	std::cout << Q_heads[i] << std::endl;
+    }
+
+    std::cout << "Checking K: \n";
+    for (int i = 0; i < num_heads; ++i) {
+	std::cout << K_heads[i] << std::endl;
+    }
+
+    std::cout << "Checking V: \n";
+    for (int i = 0; i < num_heads; ++i) {
+	std::cout << V_heads[i] << std::endl;
+    }
+
     std::vector<MatrixXd> attention_heads(num_heads);
     for (int i = 0; i < num_heads; ++i) {
         attention_heads[i] = scaled_dot_product_attention(Q_heads[i], K_heads[i], V_heads[i]);
