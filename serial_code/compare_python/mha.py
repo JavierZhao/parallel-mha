@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-# set random seed
+# Set random seed
 torch.manual_seed(0)
 
 
@@ -45,17 +45,24 @@ print("out_proj_bias dtype:", mha.mha.out_proj.bias.dtype)
 # Run MHA
 output, _ = mha(x)
 
-# Extract initial weights
+# Extract initial weights and biases
 Wqkv = mha.mha.in_proj_weight.detach().numpy()  # Ensure weights are float64
 Wo = mha.mha.out_proj.weight.detach().numpy()  # Ensure weights are float64
+bqkv = mha.mha.in_proj_bias.detach().numpy()  # Ensure biases are float64
+bo = mha.mha.out_proj.bias.detach().numpy()  # Ensure biases are float64
 
 # Split Wqkv into Wq, Wk, Wv
 Wq = Wqkv[:embed_dim, :]
 Wk = Wqkv[embed_dim : 2 * embed_dim, :]
 Wv = Wqkv[2 * embed_dim :, :]
 
-# Save the weights, input matrix x, and output to files
-np.savez("mha_weights.npz", Wq=Wq, Wk=Wk, Wv=Wv, Wo=Wo)
+# Split bqkv into bq, bk, bv
+bq = bqkv[:embed_dim]
+bk = bqkv[embed_dim : 2 * embed_dim]
+bv = bqkv[2 * embed_dim :]
+
+# Save the weights, biases, input matrix x, and output to files
+np.savez("mha_weights.npz", Wq=Wq, Wk=Wk, Wv=Wv, Wo=Wo, bq=bq, bk=bk, bv=bv, bo=bo)
 np.save("mha_input.npy", x.detach().numpy())
 np.save("mha_output.npy", output.detach().numpy())
 
@@ -64,7 +71,11 @@ print("Wq dtype:", Wq.dtype)
 print("Wk dtype:", Wk.dtype)
 print("Wv dtype:", Wv.dtype)
 print("Wo dtype:", Wo.dtype)
+print("bq dtype:", bq.dtype)
+print("bk dtype:", bk.dtype)
+print("bv dtype:", bv.dtype)
+print("bo dtype:", bo.dtype)
 print("x dtype:", x.detach().numpy().dtype)
 print("output dtype:", output.detach().numpy().dtype)
 
-print("Saved weights, input, and output.")
+print("Saved weights, biases, input, and output.")
