@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+# set random seed
+torch.manual_seed(0)
+
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, embed_dim, num_heads):
