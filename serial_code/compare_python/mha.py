@@ -26,6 +26,9 @@ batch_size = 2
 # Initialize random input
 x = torch.randn(batch_size, embed_dim, dtype=torch.float64)  # Ensure input is float64
 
+# Print input shape
+print("Input x shape:", x.shape)
+
 # Initialize the Multi-Head Attention layer
 mha = MultiHeadAttention(embed_dim, num_heads)
 
@@ -43,7 +46,10 @@ print("out_proj_weight dtype:", mha.mha.out_proj.weight.dtype)
 print("out_proj_bias dtype:", mha.mha.out_proj.bias.dtype)
 
 # Run MHA
-output, _ = mha(x)
+output = mha(x)
+
+# Print output shape
+print("Output shape:", output.shape)
 
 # Extract initial weights and biases
 Wqkv = mha.mha.in_proj_weight.detach().numpy()  # Ensure weights are float64
@@ -55,6 +61,12 @@ bo = mha.mha.out_proj.bias.detach().numpy()  # Ensure biases are float64
 Wq = Wqkv[:embed_dim, :]
 Wk = Wqkv[embed_dim : 2 * embed_dim, :]
 Wv = Wqkv[2 * embed_dim :, :]
+
+# Transpose Wq, Wk, Wv, Wo
+Wq = Wq.T
+Wk = Wk.T
+Wv = Wv.T
+Wo = Wo.T
 
 # Split bqkv into bq, bk, bv
 bq = bqkv[:embed_dim]
