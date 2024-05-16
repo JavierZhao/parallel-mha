@@ -19,8 +19,8 @@ class MultiHeadAttention(nn.Module):
 
 
 # Parameters
-embed_dim = 128
-num_heads = 4
+embed_dim = 4
+num_heads = 2
 batch_size = 2
 
 # Initialize random input
