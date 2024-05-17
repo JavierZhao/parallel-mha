@@ -42,11 +42,36 @@ int main() {
     MatrixXd Wv = load_csv("Wv.csv", d_model, d_model);
     MatrixXd Wo = load_csv("Wo.csv", d_model, d_model);
 
+    // print weights
+    std::cout << "Wq:\n" << Wq << std::endl;
+    std::cout << "Wk:\n" << Wk << std::endl;
+    std::cout << "Wv:\n" << Wv << std::endl;
+    std::cout << "Wo:\n" << Wo << std::endl;
+
+
     // Set weights
     mha.set_weights(Wq, Wk, Wv, Wo);
 
+    // Load bias from CSV files
+    MatrixXd bq = load_csv("bq.csv", 1, d_model);
+    MatrixXd bk = load_csv("bk.csv", 1, d_model);
+    MatrixXd bv = load_csv("bv.csv", 1, d_model);
+    MatrixXd bo = load_csv("bo.csv", 1, d_model);
+
+    // print bias
+    std::cout << "bq:\n" << bq << std::endl;
+    std::cout << "bk:\n" << bk << std::endl;
+    std::cout << "bv:\n" << bv << std::endl;
+    std::cout << "bo:\n" << bo << std::endl;
+
+    // Set bias
+    // mha.set_biases(bq, bk, bv, bo);
+
     // Load input matrix x from CSV file
     MatrixXd x = load_csv("mha_input.csv", batch_size, d_model);
+
+    // Print input matrix
+    std::cout << "Input:\n" << x << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -63,6 +88,9 @@ int main() {
 
     // Load expected output from CSV file
     MatrixXd expected_output = load_csv("mha_output.csv", batch_size, d_model);
+
+    // Print expected output
+    std::cout << "Expected output:\n" << expected_output << std::endl;
 
     // Compare the outputs
     if (output.isApprox(expected_output, 1e-6)) {
