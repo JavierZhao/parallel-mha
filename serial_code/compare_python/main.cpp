@@ -1,7 +1,33 @@
 #include "multihead_attention.h"
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <chrono>
-#include "cnpy.h"
+#include <vector>
+#include <string>
+#include <Eigen/Dense>
+
+using Eigen::MatrixXd;
+
+// Helper function to load a matrix from a CSV file
+MatrixXd load_csv(const std::string& file_path, int rows, int cols) {
+    MatrixXd matrix(rows, cols);
+    std::ifstream file(file_path);
+    std::string line;
+    int row = 0;
+    while (getline(file, line)) {
+        std::stringstream stream(line);
+        std::string cell;
+        int col = 0;
+        while (getline(stream, cell, ',')) {
+            matrix(row, col++) = std::stod(cell);
+        }
+        ++row;
+    }
+    file.close();
+    return matrix;
+}
+
 
 int main() {
     int num_heads = 2;
@@ -10,60 +36,33 @@ int main() {
 
     MultiHeadAttention mha(num_heads, d_model);
 
-    // Load weights from the npz file
-    cnpy::npz_t weights = cnpy::npz_load("mha_weights.npz");
-    cnpy::NpyArray arr_Wq = weights["Wq"];
-    cnpy::NpyArray arr_Wk = weights["Wk"];
-    cnpy::NpyArray arr_Wv = weights["Wv"];
-    cnpy::NpyArray arr_Wo = weights["Wo"];
+    // Load weights from CSV files
+    MatrixXd Wq = load_csv("Wq.csv", d_model, d_model);
+    MatrixXd Wk = load_csv("Wk.csv", d_model, d_model);
+    MatrixXd Wv = load_csv("Wv.csv", d_model, d_model);
+    MatrixXd Wo = load_csv("Wo.csv", d_model, d_model);
 
-    // Print dimensions of loaded weights
-    std::cout << "Wq shape: " << arr_Wq.shape[0] << " x " << arr_Wq.shape[1] << std::endl;
-    std::cout << "Wk shape: " << arr_Wk.shape[0] << " x " << arr_Wk.shape[1] << std::endl;
-    std::cout << "Wv shape: " << arr_Wv.shape[0] << " x " << arr_Wv.shape[1] << std::endl;
-    std::cout << "Wo shape: " << arr_Wo.shape[0] << " x " << arr_Wo.shape[1] << std::endl;
-
-    // Convert to Eigen matrices
-    MatrixXd Wq = Eigen::Map<MatrixXd>(arr_Wq.data<double>(), d_model, d_model);
-    MatrixXd Wk = Eigen::Map<MatrixXd>(arr_Wk.data<double>(), d_model, d_model);
-    MatrixXd Wv = Eigen::Map<MatrixXd>(arr_Wv.data<double>(), d_model, d_model);
-    MatrixXd Wo = Eigen::Map<MatrixXd>(arr_Wo.data<double>(), d_model, d_model);
-
-    std::cout << "Checking Wq\n";
-    std::cout << Wq << std::endl;
-
-    std::cout << "before set weight \n";
-
+    // Set weights
     mha.set_weights(Wq, Wk, Wv, Wo);
 
-    std::cout << "after set weight \n";
-
-    // Load input matrix x from the npy file
-    cnpy::NpyArray arr_x = cnpy::npy_load("mha_input.npy");
-    MatrixXd x = Eigen::Map<MatrixXd>(arr_x.data<double>(), batch_size, d_model);
-
-    // Print dimensions of loaded input
-    std::cout << "Input x shape: " << arr_x.shape[0] << " x " << arr_x.shape[1] << std::endl;
-    std::cout << "Checking Input:\n";
-    std::cout << x << std::endl;
+    // Load input matrix x from CSV file
+    MatrixXd x = load_csv("mha_input.csv", batch_size, d_model);
 
     auto start = std::chrono::high_resolution_clock::now();
 
+    // Compute output
     MatrixXd output = mha.compute(x);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
 
+    // Print results
     std::cout << "Output:\n" << output << std::endl;
     std::cout << "Execution time: " << duration.count() << " seconds\n";
-    std::cout << "Model dimensions: num_heads = " << num_heads << ", d_model = " << d_model << std::endl;
-    std::cout << "Matrix dimensions: batch_size = " << batch_size << std::endl;
 
-    // Load expected output from the npy file
-    cnpy::NpyArray arr_expected_output = cnpy::npy_load("mha_output.npy");
-    MatrixXd expected_output = Eigen::Map<MatrixXd>(arr_expected_output.data<double>(), batch_size, d_model);
 
-    std::cout << "Expected Output:\n" << expected_output << std::endl;
+    // Load expected output from CSV file
+    MatrixXd expected_output = load_csv("mha_output.csv", batch_size, d_model);
 
     // Compare the outputs
     if (output.isApprox(expected_output, 1e-6)) {
