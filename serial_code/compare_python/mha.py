@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import csv
 
 # Set random seed
 torch.manual_seed(0)
@@ -25,8 +26,6 @@ batch_size = 2
 
 # Initialize random input
 x = torch.randn(batch_size, embed_dim, dtype=torch.float64)  # Ensure input is float64
-
-# Print input shape
 print("Input x shape:", x.shape)
 
 # Initialize the Multi-Head Attention layer
@@ -39,7 +38,6 @@ with torch.no_grad():
     mha.mha.out_proj.weight = nn.Parameter(mha.mha.out_proj.weight.to(torch.float64))
     mha.mha.out_proj.bias = nn.Parameter(mha.mha.out_proj.bias.to(torch.float64))
 
-# Print weight data types to verify
 print("in_proj_weight dtype:", mha.mha.in_proj_weight.dtype)
 print("in_proj_bias dtype:", mha.mha.in_proj_bias.dtype)
 print("out_proj_weight dtype:", mha.mha.out_proj.weight.dtype)
@@ -47,47 +45,42 @@ print("out_proj_bias dtype:", mha.mha.out_proj.bias.dtype)
 
 # Run MHA
 output = mha(x)
-
-# Print output shape
 print("Output shape:", output.shape)
 
-# Extract initial weights and biases
-Wqkv = mha.mha.in_proj_weight.detach().numpy()  # Ensure weights are float64
-Wo = mha.mha.out_proj.weight.detach().numpy()  # Ensure weights are float64
-bqkv = mha.mha.in_proj_bias.detach().numpy()  # Ensure biases are float64
-bo = mha.mha.out_proj.bias.detach().numpy()  # Ensure biases are float64
+# Extract weights and biases
+Wqkv = mha.mha.in_proj_weight.detach().numpy()
+Wo = mha.mha.out_proj.weight.detach().numpy()
+bqkv = mha.mha.in_proj_bias.detach().numpy()
+bo = mha.mha.out_proj.bias.detach().numpy()
 
 # Split Wqkv into Wq, Wk, Wv
 Wq = Wqkv[:embed_dim, :]
 Wk = Wqkv[embed_dim : 2 * embed_dim, :]
 Wv = Wqkv[2 * embed_dim :, :]
 
-# # Transpose Wq, Wk, Wv, Wo
-# Wq = Wq.T
-# Wk = Wk.T
-# Wv = Wv.T
-# Wo = Wo.T
-
 # Split bqkv into bq, bk, bv
 bq = bqkv[:embed_dim]
 bk = bqkv[embed_dim : 2 * embed_dim]
 bv = bqkv[2 * embed_dim :]
 
-# Save the weights, biases, input matrix x, and output to files
-np.savez("mha_weights.npz", Wq=Wq, Wk=Wk, Wv=Wv, Wo=Wo, bq=bq, bk=bk, bv=bv, bo=bo)
-np.save("mha_input.npy", x.detach().numpy())
-np.save("mha_output.npy", output.detach().numpy())
 
-# Print data types to verify
-print("Wq dtype:", Wq.dtype)
-print("Wk dtype:", Wk.dtype)
-print("Wv dtype:", Wv.dtype)
-print("Wo dtype:", Wo.dtype)
-print("bq dtype:", bq.dtype)
-print("bk dtype:", bk.dtype)
-print("bv dtype:", bv.dtype)
-print("bo dtype:", bo.dtype)
-print("x dtype:", x.detach().numpy().dtype)
-print("output dtype:", output.detach().numpy().dtype)
+# Save the weights, biases, input matrix x, and output to CSV files
+def save_array_to_csv(data, filename):
+    with open(filename, "w", newline="") as f:
+        writer = csv.writer(f)
+        for row in data:
+            writer.writerow(row)
+
+
+save_array_to_csv(Wq, "Wq.csv")
+save_array_to_csv(Wk, "Wk.csv")
+save_array_to_csv(Wv, "Wv.csv")
+save_array_to_csv(Wo, "Wo.csv")
+save_array_to_csv(bq[:, None].T, "bq.csv")  # Transpose to make it a single row
+save_array_to_csv(bk[:, None].T, "bk.csv")
+save_array_to_csv(bv[:, None].T, "bv.csv")
+save_array_to_csv(bo[:, None].T, "bo.csv")
+save_array_to_csv(x.detach().numpy(), "mha_input.csv")
+save_array_to_csv(output.detach().numpy(), "mha_output.csv")
 
 print("Saved weights, biases, input, and output.")
