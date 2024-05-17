@@ -4,8 +4,8 @@
 #include "cnpy.h"
 
 int main() {
-    int num_heads = 4;
-    int d_model = 128;
+    int num_heads = 2;
+    int d_model = 4;
     int batch_size = 2;
 
     MultiHeadAttention mha(num_heads, d_model);
@@ -29,7 +29,14 @@ int main() {
     MatrixXd Wv = Eigen::Map<MatrixXd>(arr_Wv.data<double>(), d_model, d_model);
     MatrixXd Wo = Eigen::Map<MatrixXd>(arr_Wo.data<double>(), d_model, d_model);
 
+    std::cout << "Checking Wq\n";
+    std::cout << Wq << std::endl;
+
+    std::cout << "before set weight \n";
+
     mha.set_weights(Wq, Wk, Wv, Wo);
+
+    std::cout << "after set weight \n";
 
     // Load input matrix x from the npy file
     cnpy::NpyArray arr_x = cnpy::npy_load("mha_input.npy");
@@ -37,6 +44,8 @@ int main() {
 
     // Print dimensions of loaded input
     std::cout << "Input x shape: " << arr_x.shape[0] << " x " << arr_x.shape[1] << std::endl;
+    std::cout << "Checking Input:\n";
+    std::cout << x << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
 
