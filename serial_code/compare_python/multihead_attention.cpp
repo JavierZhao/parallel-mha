@@ -29,11 +29,11 @@ MultiHeadAttention::MultiHeadAttention(int num_heads, int d_model)
 
 void MultiHeadAttention::set_weights(const MatrixXd& Wq_in, const MatrixXd& Wk_in, const MatrixXd& Wv_in, const MatrixXd& Wo_in) {
     for (int i = 0; i < num_heads; ++i) {
-        Wq[i] = Wq_in.block(0, i * depth, d_model, depth);
-        Wk[i] = Wk_in.block(0, i * depth, d_model, depth);
-        Wv[i] = Wv_in.block(0, i * depth, d_model, depth);
+        Wq[i] = Wq_in.transpose().block(0, i * depth, d_model, depth);
+        Wk[i] = Wk_in.transpose().block(0, i * depth, d_model, depth);
+        Wv[i] = Wv_in.transpose().block(0, i * depth, d_model, depth);
     }
-    Wo = Wo_in;
+    Wo = Wo_in.transpose();
 }
 
 void MultiHeadAttention::set_biases(const VectorXd& bq_in, const VectorXd& bk_in, const VectorXd& bv_in, const VectorXd& bo_in) {
