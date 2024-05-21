@@ -15,17 +15,18 @@ class MultiHeadAttention(nn.Module):
         )
 
     def forward(self, x):
-        output, _ = self.mha(x, x, x)
-        return output
+        output, attn = self.mha(x, x, x, average_attn_weights=False)
+        return output, attn
 
 
 # Parameters
 embed_dim = 4
 num_heads = 2
-batch_size = 2
+batch_size = 1
+seq_length = 2
 
 # Initialize random input
-x = torch.randn(batch_size, embed_dim, dtype=torch.float64)  # Ensure input is float64
+x = torch.randn(batch_size, seq_length, embed_dim, dtype=torch.float64)  # Ensure input is float64
 print("Input x shape:", x.shape)
 
 # Initialize the Multi-Head Attention layer
@@ -44,8 +45,9 @@ print("out_proj_weight dtype:", mha.mha.out_proj.weight.dtype)
 print("out_proj_bias dtype:", mha.mha.out_proj.bias.dtype)
 
 # Run MHA
-output = mha(x)
+output, attn = mha(x)
 print("Output shape:", output.shape)
+print("attn", attn)
 
 # Extract weights and biases
 Wqkv = mha.mha.in_proj_weight.detach().numpy()
@@ -80,7 +82,7 @@ save_array_to_csv(bq[:, None].T, "bq.csv")  # Transpose to make it a single row
 save_array_to_csv(bk[:, None].T, "bk.csv")
 save_array_to_csv(bv[:, None].T, "bv.csv")
 save_array_to_csv(bo[:, None].T, "bo.csv")
-save_array_to_csv(x.detach().numpy(), "mha_input.csv")
-save_array_to_csv(output.detach().numpy(), "mha_output.csv")
+save_array_to_csv(x.detach().numpy().squeeze(), "mha_input.csv")
+save_array_to_csv(output.detach().numpy().squeeze(), "mha_output.csv")
 
 print("Saved weights, biases, input, and output.")
