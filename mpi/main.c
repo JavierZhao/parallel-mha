@@ -1,4 +1,7 @@
-#include "summa_paper.h"
+// #include "summa_paper.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "mpi.h"
 
 void divideInteger(int m, int num_comm_row, int result[]) {
     int quotient = m / num_comm_row;
@@ -15,55 +18,7 @@ void divideInteger(int m, int num_comm_row, int result[]) {
     }
 }
 
-int main()
-{
-    int m, n, k,
-        nb;            /* panel width */
-    double *a, *b,     /* Matrix A and B */
-           *c;         /* Matrix C */
-    int lda, ldb, ldc;
-    int m_a[], n_a[], /* dimensions of blocks of A */
-        m_b[], n_b[], /* dimensions of blocks of B */
-        m_c[], n_c[]; /* dimensions of blocks of C */
-    int num_comm_row, num_comm_col, coords[2]; /* params to get processor grid */
 
-    MPI_Comm ROW_COMM, COL_COMM, CART_COMM;
-
-    create_cart_grid(num_comm_row, num_comm_col, coords, &CART_COMM);
-    cart_sub(CART_COMM, &ROW_COMM, &COL_COMM);
-
-    m = 256;
-    k = 512;
-    n = 128;
-    nb = 32;
-
-    initializeMatrices(m, k, k, n, &a, &b);
-    *c = zeroInit(m, n);
-
-    lda = m;
-    ldb = k;
-    ldc = m;
-
-
-    // calculate the size of A blocks
-    divideInteger(m, num_comm_row, m_a);
-    divideInteger(k, nb, n_a);
-
-    // calculate the size of B blocks
-    divideInteger(k, nb, m_b);
-    divideInteger(n, num_comm_col, n_b);
-
-    // calculate the size of A blocks
-    divideInteger(m, num_comm_row, m_c);
-    divideInteger(n, num_comm_col, n_c);
-
-
-}
-
-// void summa( m, n, k, nb,
-//             a, lda, b, ldb, c, ldc,
-//             m_a, n_a, m_b, n_b, m_c, n_c,
-//             comm_row, comm_col, work1, work2 )
 void create_cart_grid(int row, int col, int *coords, MPI_Comm* CART_COMM)
 {
     int menum_cart;
@@ -122,3 +77,53 @@ double* zeroInitC(int rows, int cols) {
 
     return C;
 }
+int main(int argc, char * argv[])
+{
+    MPI_Init(&argc, &argv);
+    int m, n, k,
+        nb;            /* panel width */
+    double *a, *b,     /* Matrix A and B */
+           *c;         /* Matrix C */
+    int lda, ldb, ldc;
+    int num_comm_row, num_comm_col, coords[2]; /* params to get processor grid */
+
+    MPI_Comm ROW_COMM, COL_COMM, CART_COMM;
+
+    create_cart_grid(num_comm_row, num_comm_col, coords, &CART_COMM);
+    cart_sub(CART_COMM, &ROW_COMM, &COL_COMM);
+
+    m = 256;
+    k = 512;
+    n = 128;
+    nb = 32;
+
+    initializeAB(m, k, k, n, &a, &b);
+    c = zeroInitC(m, n);
+
+    lda = m;
+    ldb = k;
+    ldc = m;
+	
+    // initialize blcok sizes of A, B, C
+    int m_a[num_comm_row], n_a[nb],
+    	m_b[nb], n_b[num_comm_col],
+	m_c[num_comm_row], n_c[num_comm_col];
+
+
+    // calculate the size of A blocks
+    divideInteger(m, num_comm_row, m_a);
+    divideInteger(k, nb, n_a);
+
+    // calculate the size of B blocks
+    divideInteger(k, nb, m_b);
+    divideInteger(n, num_comm_col, n_b);
+
+    // calculate the size of A blocks
+    divideInteger(m, num_comm_row, m_c);
+    divideInteger(n, num_comm_col, n_c);
+}
+
+// void summa( m, n, k, nb,
+//             a, lda, b, ldb, c, ldc,
+//             m_a, n_a, m_b, n_b, m_c, n_c,
+//             comm_row, comm_col, work1, work2 )
