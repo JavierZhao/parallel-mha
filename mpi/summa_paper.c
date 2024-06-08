@@ -38,7 +38,9 @@ MPI_Comm comm_row, comm_col;
     // double *temp;
     // double *p;
 
-    // create 2d processor array if master task
+    /* get total number of processor rows and columns */
+    nprow = MPI_Comm_size(comm_row, &nprow);
+    npcol = MPI_Comm_size(comm_col, &npcol);
 
     /*get myrow, mycol*/
     MPI_Comm_rank( comm_row, &myrow );
@@ -55,23 +57,23 @@ MPI_Comm comm_row, comm_col;
     for (kk = 0; kk < k; kk += iwrk)
     {
         printf("Beginning of a new kk iteraction. Current kk=%d\n", kk);
-        iwrk = min( nb, m_b[icurrow]-ii );
-        iwrk = min( iwrk, n_a[icurcol]-jj );
+        iwrk = min( nb, m_b[icurrow]);
+        iwrk = min( iwrk, n_a[icurcol]);
         /* pack current iwrk columns of A into work 1 */
         printf("Start copying portions of Matrices\n");
-        if ( mycol == icurcol )
+        if ( mycol == icurcol%(npcol+1) )
             printf("debugging dlacpy: M=%d, N=%d, LDA=%d, LDB=%d\n",
                     m_a[myrow], iwrk, lda, m_a[myrow]);
             dlacpy_("General", &m_a[myrow], &iwrk, &A(0, jj), &lda, work1, &m_a[myrow]);
         /* pack current iwrk rows of B into work 2 */
-        if ( myrow == icurrow )
+        if ( myrow == icurrow%(nprow+1) )
             dlacpy_("General", &iwrk, &n_b[mycol], &B(ii, 0), &ldb, work2, &iwrk);
         /* broadcast work1 and work 2 */
         printf("Start Broadcasting\n");
         printf("root: icurrow=%d, icurcol=%d\n", icurrow, icurcol);
 
-        RING_Bcast(work1, m_a[ myrow ]*iwrk, MPI_DOUBLE, icurcol, comm_row);
-        RING_Bcast(work2, n_b[ mycol ]*iwrk, MPI_DOUBLE, icurrow, comm_col);
+        MPI_Bcast(work1, m_a[ myrow ]*iwrk, MPI_DOUBLE, icurcol%(npcol+1), comm_row);
+        MPI_Bcast(work2, n_b[ mycol ]*iwrk, MPI_DOUBLE, icurrow%(nprow+1), comm_col);
 
         /* update local block */
         // matrix multiplication
@@ -84,7 +86,7 @@ MPI_Comm comm_row, comm_col;
         //         &d_one, work1, &m_b[myrow], work2, &m_b[myrow], &d_zero, c, &ldc);
         // perform matrix multiplication using dgemm_
         dgemm_("No transpose", "No transpose", &m_c[myrow], &n_c[mycol], &iwrk,
-                &d_one, work1, &m_a[myrow], work2, &iwrk, &d_zero, c, &ldc);
+               &d_one, work1, &m_a[myrow], work2, &iwrk, &d_one, c, &ldc);
         // matrix_multiply(m_c[myrow], n_c[mycol], iwrk, work1, m_a[myrow], work2, iwrk, c, ldc);
         printf("Process %d %d finished dgemm\n", myrow, mycol);
         printf("current kk: %d\n", kk);

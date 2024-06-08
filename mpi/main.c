@@ -70,7 +70,7 @@ void initializeAB(int rowsA, int colsA, int rowsB, int colsB, double **A, double
     }
 }
 
-double* zeroInitC(int rows, int cols) {
+double* zeroInit(int rows, int cols) {
     double *C = (double *)malloc(rows * cols * sizeof(double));
     if (C == NULL) {
         printf("Memory allocation failed\n");
@@ -86,6 +86,37 @@ double* zeroInitC(int rows, int cols) {
 
     return C;
 }
+
+double* identityInit(int size) {
+    double *I = (double *)malloc(size * size * sizeof(double));
+    if (I == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+
+    // Initialize matrix I to identity matrix in column-major order
+    for (int col = 0; col < size; col++) {
+        for (int row = 0; row < size; row++) {
+            if (row == col)
+                I[col * size + row] = 1.0; // Set diagonal elements to 1
+            else
+                I[col * size + row] = 0.0; // Set off-diagonal elements to 0
+        }
+    }
+
+    return I;
+}
+
+void printMatrix(double *c, int m, int n){
+    printf("m=%d, n=%d\n", m, n);
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            printf("%f ", c[j * m + i]);
+        }
+        printf("\n");
+    }
+}
+
 int main(int argc, char * argv[])
 {
     MPI_Init(&argc, &argv);
@@ -101,10 +132,10 @@ int main(int argc, char * argv[])
     create_cart_grid(num_comm_row, num_comm_col, coords, &CART_COMM);
     cart_sub(CART_COMM, &ROW_COMM, &COL_COMM);
 
-    m = 256;
-    k = 512;
-    n = 128;
-    nb = 32;
+    // m = 4;
+    // k = 4;
+    // n = 4;
+    // nb = 2;
 
     // m = 32;
     // k = 32;
@@ -113,8 +144,27 @@ int main(int argc, char * argv[])
 
     // print start initialization
     printf("m: %d, k: %d, n: %d, nb: %d\n", m, k, n, nb);
+
+    /* Test Cases */
+    // zero test
+    // m = 4;
+    // k = 4;
+    // n = 4;
+    // nb = 2;
+    // initializeAB(m, k, k, n, &a, &b);
+    // b = zeroInitC(k, n);
+    // c = zeroInitC(m, n);
+
+    // identity test
+    m = 4;
+    k = 4;
+    n = 4;
+    nb = 2;
     initializeAB(m, k, k, n, &a, &b);
-    c = zeroInitC(m, n);
+    b = identityInit(n);
+    c = zeroInit(m, n);
+
+
     // printf("Matrix A:\n");
     // for (int i = 0; i < m; i++) {
     //     for (int j = 0; j < k; j++) {
@@ -199,32 +249,38 @@ int main(int argc, char * argv[])
 
     // call summa
     summa(m, n, k, nb, a, lda, b, ldb, c, ldc, m_a, n_a, m_b, n_b, m_c, n_c, ROW_COMM, COL_COMM);
-    MPI_Barrier(MPI_COMM_WORLD);
-    // For Debugging: directly compute C = A*B
-    // for (int i = 0; i < m; i++) {
-    //     for (int j = 0; j < n; j++) {
-    //         for (int l = 0; l < k; l++) {
-    //             c[j * m + i] += a[l * m + i] * b[j * k + l];
-    //         }
-    //     }
-    // }
-    // print the result
-    printf("Matrix C:\n");
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%f ", c[j * m + i]);
-        }
-    printf("\n");
-    // finalize
-    printf("free a\n");
-    free(a);
-    printf("free b\n");
-    free(b);
-    printf("free c\n");
-    free(c);
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // // For Debugging: directly compute C = A*B
+    // // for (int i = 0; i < m; i++) {
+    // //     for (int j = 0; j < n; j++) {
+    // //         for (int l = 0; l < k; l++) {
+    // //             c[j * m + i] += a[l * m + i] * b[j * k + l];
+    // //         }
+    // //     }
+    // // }
+    // print the result if master node
+    int me;
+    MPI_Comm_rank( CART_COMM, &me );
+    if ( me == 0){
+        printf("Matrix A:\n");
+        printMatrix(a, m, k);
 
-    printf("MPI_Finalize\n");
+        printf("Matrix B:\n");
+        printMatrix(b, k, n);
+
+        printf("Matrix C:\n");
+        printMatrix(c, m, n);
+    }
+
+    // printf("\n");
+    // // finalize
+    // printf("free a\n");
+    // free(a);
+    // printf("free b\n");
+    // free(b);
+    // printf("free c\n");
+    // free(c);
+    //
+    // printf("MPI_Finalize\n");
     MPI_Finalize();
-}
-
 }
