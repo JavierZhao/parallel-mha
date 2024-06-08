@@ -4,7 +4,7 @@
 #include "mpi.h"
 
 
-/* to compile: 
+/* to compile:
 brew install lapack
 brew install openblas
 
@@ -140,7 +140,7 @@ int main(int argc, char * argv[])
     lda = m;
     ldb = k;
     ldc = m;
-	
+
     // initialize blcok sizes of A, B, C
     int m_a[num_comm_row], n_a[nb],
     	m_b[nb], n_b[num_comm_col],
@@ -199,7 +199,7 @@ int main(int argc, char * argv[])
 
     // call summa
     summa(m, n, k, nb, a, lda, b, ldb, c, ldc, m_a, n_a, m_b, n_b, m_c, n_c, ROW_COMM, COL_COMM);
-
+    MPI_Barrier(MPI_COMM_WORLD);
     // For Debugging: directly compute C = A*B
     // for (int i = 0; i < m; i++) {
     //     for (int j = 0; j < n; j++) {
@@ -216,10 +216,14 @@ int main(int argc, char * argv[])
         }
     printf("\n");
     // finalize
+    printf("free a\n");
     free(a);
+    printf("free b\n");
     free(b);
+    printf("free c\n");
     free(c);
 
+    printf("MPI_Finalize\n");
     MPI_Finalize();
 }
 

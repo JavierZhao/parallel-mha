@@ -54,15 +54,22 @@ MPI_Comm comm_row, comm_col;
     printf("myrow: %d, mycol: %d\n", myrow, mycol);
     for (kk = 0; kk < k; kk += iwrk)
     {
+        printf("Beginning of a new kk iteraction. Current kk=%d\n", kk);
         iwrk = min( nb, m_b[icurrow]-ii );
         iwrk = min( iwrk, n_a[icurcol]-jj );
         /* pack current iwrk columns of A into work 1 */
+        printf("Start copying portions of Matrices\n");
         if ( mycol == icurcol )
-            dlacpy_("General", &m_a[myrow], &iwrk, &A(jj, 0), &lda, work1, &m_a[myrow]);
+            printf("debugging dlacpy: M=%d, N=%d, LDA=%d, LDB=%d\n",
+                    m_a[myrow], iwrk, lda, m_a[myrow]);
+            dlacpy_("General", &m_a[myrow], &iwrk, &A(0, jj), &lda, work1, &m_a[myrow]);
         /* pack current iwrk rows of B into work 2 */
         if ( myrow == icurrow )
-            dlacpy_("General", &iwrk, &n_b[mycol], &B(0, ii), &ldb, work2, &iwrk);
+            dlacpy_("General", &iwrk, &n_b[mycol], &B(ii, 0), &ldb, work2, &iwrk);
         /* broadcast work1 and work 2 */
+        printf("Start Broadcasting\n");
+        printf("root: icurrow=%d, icurcol=%d\n", icurrow, icurcol);
+
         RING_Bcast(work1, m_a[ myrow ]*iwrk, MPI_DOUBLE, icurcol, comm_row);
         RING_Bcast(work2, n_b[ mycol ]*iwrk, MPI_DOUBLE, icurrow, comm_col);
 
@@ -88,16 +95,19 @@ MPI_Comm comm_row, comm_col;
         /* update icurcol, icurrow, ii, jj */
         ii += iwrk;
         jj += iwrk;
-        if ( jj>=n_a[ icurcol ] ) { icurcol++;
-            jj = 0;
+        if ( jj>=n_a[ icurcol ] ) {
+            icurcol++;
+            // jj = 0;
         };
-        if ( ii>=m_b[ icurrow ] ) { icurrow++;
-            ii = 0;
+        if ( ii>=m_b[ icurrow ] ) {
+            icurrow++;
+            // ii = 0;
         };
         printf("icurrow: %d, icurcol: %d\n", icurrow, icurcol);
         MPI_Barrier(MPI_COMM_WORLD);
     }
-    // free (temp);
+    free(work1);
+    free(work2);
 }
 
 void RING_Bcast (double *buf, int count, MPI_Datatype type, int root , MPI_Comm comm)
@@ -107,9 +117,16 @@ void RING_Bcast (double *buf, int count, MPI_Datatype type, int root , MPI_Comm 
 
     MPI_Comm_rank( comm, &me ); MPI_Comm_size(comm, &np);
     if (me != root)
+    {
+        printf("Recieve from %d\n", (me-1+np)%np);
         MPI_Recv(buf, count, type, (me-1+np)%np, MPI_ANY_TAG, comm, &status);
+    }
+
     if ( (me+1)%np != root )
+    {
+        printf("Send to %d\n", (me+1)%np);
         MPI_Send(buf, count, type, (me+1)%np, 0, comm);
+    }
 }
 
 void matrix_multiply(int m, int n, int k, double* A, int lda, double* B, int ldb, double* C, int ldc) {
