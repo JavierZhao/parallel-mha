@@ -53,7 +53,23 @@ MPI_Comm comm_row, comm_col;
     double *work1 = (double *)malloc(m_a[myrow] * n_a[mycol] * sizeof(double));
     double *work2 = (double *)malloc(m_b[myrow] * n_b[mycol] * sizeof(double));
 
-    printf("myrow: %d, mycol: %d\n", myrow, mycol);
+    // print received input matrices
+    printf("input matrices from process %d %d\n", myrow, mycol);
+    printf("Matrix A\n");
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < k; j++) {
+            printf("%f ", A(i, j));
+        }
+        printf("\n");
+    }
+    printf("Matrix B\n");
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < n; j++) {
+            printf("%f ", B(i, j));
+        }
+        printf("\n");
+    }
+
     for (kk = 0; kk < k; kk += iwrk)
     {
         printf("Beginning of a new kk iteraction. Current kk=%d\n", kk);
@@ -108,6 +124,15 @@ MPI_Comm comm_row, comm_col;
         printf("icurrow: %d, icurcol: %d\n", icurrow, icurcol);
         MPI_Barrier(MPI_COMM_WORLD);
     }
+    // print the result
+    printf("Results from Process %d %d\n", myrow, mycol);
+    for (int i = 0; i < m_c[myrow]; i++) {
+        for (int j = 0; j < n_c[mycol]; j++) {
+            printf("%f ", C(i, j));
+        }
+        printf("\n");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
     free(work1);
     free(work2);
 }

@@ -161,31 +161,8 @@ int main(int argc, char * argv[])
     n = 4;
     nb = 2;
     initializeAB(m, k, k, n, &a, &b);
-    b = identityInit(n);
+    // b = identityInit(n);
     c = zeroInit(m, n);
-
-
-    // printf("Matrix A:\n");
-    // for (int i = 0; i < m; i++) {
-    //     for (int j = 0; j < k; j++) {
-    //         printf("%f ", a[j * m + i]);
-    //     }
-    //     printf("\n");
-    // }
-    // printf("Matrix B:\n");
-    // for (int i = 0; i < k; i++) {
-    //     for (int j = 0; j < n; j++) {
-    //         printf("%f ", b[j * k + i]);
-    //     }
-    //     printf("\n");
-    // }
-    // printf("Matrix C:\n");
-    // for (int i = 0; i < m; i++) {
-    //     for (int j = 0; j < n; j++) {
-    //         printf("%f ", c[j * m + i]);
-    //     }
-    //     printf("\n");
-    // }
 
     lda = m;
     ldb = k;
