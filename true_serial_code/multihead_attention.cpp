@@ -103,12 +103,12 @@ Matrix MultiHeadAttention::compute(const Matrix& x) {
         K_heads[i] = Matrix::multiply(x, Wk[i]);
         V_heads[i] = Matrix::multiply(x, Wv[i]);
         // Apply broadcast and add biases
-        // std::cout << "Adding Matrices with dimensions: " 
+        // std::cout << "In obtaining QKV, Adding Matrices with dimensions: " 
         //   << Q_heads[i].rows << "x" << Q_heads[i].cols << " and " 
-        //   << bq[i].broadcast(depth).rows << "x" << bq[i].broadcast(depth).cols << std::endl;
-        Q_heads[i] += bq[i].broadcast(depth);
-        K_heads[i] += bk[i].broadcast(depth);
-        V_heads[i] += bv[i].broadcast(depth);
+        //   << bq[i].broadcast(Q_heads[i].rows).rows << "x" << bq[i].broadcast(Q_heads[i].rows).cols << std::endl;
+        Q_heads[i] += bq[i].broadcast(Q_heads[i].rows);
+        K_heads[i] += bk[i].broadcast(K_heads[i].rows);
+        V_heads[i] += bv[i].broadcast(V_heads[i].rows);
         
     }
 
