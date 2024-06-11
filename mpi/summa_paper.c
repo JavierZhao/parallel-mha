@@ -85,9 +85,9 @@ MPI_Comm comm_row, comm_col;
         // dgemm_("No transpose", "No transpose", &m_c[myrow], &n_c[mycol], &iwrk,
         //         &d_one, work1, &m_b[myrow], work2, &m_b[myrow], &d_zero, c, &ldc);
         // perform matrix multiplication using dgemm_
-        dgemm_("No transpose", "No transpose", &m_c[myrow], &n_c[mycol], &iwrk,
-               &d_one, work1, &m_a[myrow], work2, &iwrk, &d_one, c, &ldc);
-        // matrix_multiply(m_c[myrow], n_c[mycol], iwrk, work1, m_a[myrow], work2, iwrk, c, ldc);
+        // dgemm_("No transpose", "No transpose", &m_c[myrow], &n_c[mycol], &iwrk,
+        //       &d_one, work1, &m_a[myrow], work2, &iwrk, &d_one, c, &ldc);
+        matrix_multiply(m_c[myrow], n_c[mycol], iwrk, work1, m_a[myrow], work2, iwrk, c, ldc);
         printf("Process %d %d finished dgemm\n", myrow, mycol);
         printf("current kk: %d\n", kk);
         printf("current iwrk: %d\n", iwrk);
@@ -138,7 +138,7 @@ void matrix_multiply(int m, int n, int k, double* A, int lda, double* B, int ldb
             for (int p = 0; p < k; ++p) {
                 sum += A[i * lda + p] * B[p * ldb + j];
             }
-            C[i * ldc + j] = sum;
+            C[i * ldc + j] += sum;
         }
     }
 }
