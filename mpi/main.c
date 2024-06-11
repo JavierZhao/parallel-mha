@@ -243,6 +243,7 @@ int main(int argc, char * argv[])
     // n = 4;
     // panel_width = 3;
     // initializeAB(m, k, k, n, &a, &b);
+<<<<<<< HEAD
     // b = zeroInit(k, n);
 
     // 2. identity test
