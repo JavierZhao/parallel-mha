@@ -151,11 +151,10 @@ double** decompose_matrix(double *matrix, int rows, int cols, int block_rows, in
     int num_blocks = (num_blocks_x) * (num_blocks_y);
 
     // Allocate memory for the result array
-    int block_index;
     double **result = (double **) malloc(num_blocks * sizeof(double));
     for (int i = 0; i < num_blocks_y; i++) {
         for (int j = 0; j < num_blocks_x; j++){
-            block_index = i * (num_blocks_x) + j;
+            int block_index = i * (num_blocks_x) + j;
             // printf("blocks_m[i]=%d, blocks_n[j]=%d\n", blocks_m[i], blocks_n[j]);
             (result)[block_index] = (double *) malloc(blocks_m[i] * blocks_n[j] * sizeof(double));
         }
@@ -163,22 +162,23 @@ double** decompose_matrix(double *matrix, int rows, int cols, int block_rows, in
 
     // Decompose the matrix into blocks and flatten each block
     // block x is the x index of block
-    block_index = 0;
-    int source_index;
-    int dest_index;
-    int offset_row, offset_col;
     for (int i = 0; i < num_blocks_y; i++) {
         for (int j = 0; j < num_blocks_x; j++) {
-            block_index = i * num_blocks_x + j;
+            int block_index = i * num_blocks_x + j;
             double *block = (result)[block_index];
-            for (int y = 0; y < block_rows; y++) {
-                for (int x = 0; x < block_cols; x++) {
+            int current_block_rows = blocks_m[i];
+            int current_block_cols = blocks_n[j];
+            for (int y = 0; y < current_block_rows; y++) {
+                for (int x = 0; x < current_block_cols; x++) {
                     // find the offset
                     // printf("i=%d, j=%d\n", i, j);
+                    int offset_row, offset_col;
                     blockRowCol_to_matrixRowCol(i, j, blocks_m, blocks_n, &offset_row, &offset_col);
                     // printf("offset_row=%d, offset_col=%d\n", offset_row, offset_col);
+                    int source_index;
+                    int dest_index;
                     source_index = (offset_row + y) * cols + (offset_col + x);
-                    dest_index = y * blocks_n[j] + x;
+                    dest_index = y * current_block_cols + x;
                     block[dest_index] = matrix[source_index];
                 }
             }
@@ -229,6 +229,21 @@ int main(int argc, char * argv[])
     MPI_Comm_rank( ROW_COMM, &myrow );
     MPI_Comm_rank( COL_COMM, &mycol );
 
+    // MPI_Init(&argc, &argv);
+    // MPI_Comm ROW_COMM_WORKING, COL_COMM_WORKING, CART_COMM_WORKING;
+    // int num_comm_row=2, num_comm_col=2, coords[2]; /* params to get processor grid */
+    // create_cart_grid(num_comm_row, num_comm_col, coords, &CART_COMM_WORKING);
+    // cart_sub(CART_COMM_WORKING, &ROW_COMM_WORKING, &COL_COMM_WORKING);
+    //
+    // // get my global index
+    // int me;
+    // MPI_Comm_rank(CART_COMM_WORKING, &me );
+    //
+    // // get my processor row and col index
+    // int myrow, mycol;
+    // MPI_Comm_rank( ROW_COMM_WORKING, &myrow );
+    // MPI_Comm_rank( COL_COMM_WORKING, &mycol );
+
     int m, n, k,
         panel_width;            /* panel width */
     // double *a, *b;     /* Matrix A and B */
@@ -247,13 +262,13 @@ int main(int argc, char * argv[])
     // b = zeroInit(k, n);
 
     // 2. identity test
-    m = 4;
-    k = 8;
-    n = 8;
-    panel_width = 3;
-    double *a, *b;     /* Matrix A and B */
-    a = indexInit(m, k);
-    b = identityInit(n);
+    // m = 4;
+    // k = 8;
+    // n = 8;
+    // panel_width = 3;
+    // double *a, *b;     /* Matrix A and B */
+    // a = indexInit(m, k);
+    // b = identityInit(n);
 
     // 3. square test
     // m = 2;
@@ -403,10 +418,13 @@ int main(int argc, char * argv[])
     MPI_Comm_free(&CART_COMM);
     MPI_Comm_free(&ROW_COMM);
     MPI_Comm_free(&COL_COMM);
+    // CART_COMM_WORKING = CART_COMM;
+    // ROW_COMM_WORKING = ROW_COMM;
+    // COL_COMM_WORKING = COL_COMM;
 
-    MPI_Comm_rank(CART_COMM_WORKING, &me );
-    MPI_Comm_rank(ROW_COMM_WORKING, &myrow );
-    MPI_Comm_rank(COL_COMM_WORKING, &mycol );
+    // MPI_Comm_rank(CART_COMM_WORKING, &me );
+    // MPI_Comm_rank(ROW_COMM_WORKING, &myrow );
+    // MPI_Comm_rank(COL_COMM_WORKING, &mycol );
     // printf("me=%d, myrow=%d, mycol=%d\n", me, myrow, mycol);
 
     // early exit if this worker is not working
@@ -428,7 +446,7 @@ int main(int argc, char * argv[])
         //     myrow, global_panel_index, m_a[myrow]*n_a[global_panel_index], myrow, mycol, block_k);
         my_A_blocks[block_k] = (double *)malloc(m_a[myrow] * n_a[global_panel_index] * sizeof(double));
     }
-    MPI_Barrier(CART_COMM_WORKING);
+
     // allocate memory for broadcasting column chunks of B
     int my_B_panel_num = num_k_panels/num_m_blocks;
     if (myrow < (num_k_panels%num_m_blocks)) {my_B_panel_num++;}
@@ -444,8 +462,8 @@ int main(int argc, char * argv[])
 
     // early exit if the worker won't be working
 
+    MPI_Barrier(CART_COMM_WORKING);
     // master code starts
-    MPI_Request request;
     if ( me == MASTER){
 
         // initializeAB(m, k, k, n, &a, &b);
@@ -465,12 +483,10 @@ int main(int argc, char * argv[])
         b_blocks = decompose_matrix(b, k, n, panel_width, n_b[0], m_b, n_b);
 
         // distribute blocks to workers
-        int block_row, block_col;
-        int comm_row, comm_col;
-        int dest_comm_index;
         // a blocks
         for (int block_idx=0; block_idx < num_a_blocks; block_idx++){
             // get the block's row and column
+            int block_row, block_col;
             getRowCol(block_idx, num_m_blocks, num_k_panels, &block_row, &block_col);
 
             // debug
@@ -478,41 +494,47 @@ int main(int argc, char * argv[])
             // print_matrix(a_blocks[block_idx], m_a[block_row], n_a[block_col]);
 
             // derive the destiny processor's row and column
+            int comm_row, comm_col;
             comm_row = block_row;
             comm_col = block_col % num_n_blocks;
 
             // derive the destiny processor's 1D index
-            getIndex(comm_row, comm_col, num_comm_col, &dest_comm_index);
+            int dest_comm_index;
+            getIndex(comm_row, comm_col, num_n_blocks, &dest_comm_index);
 
             // int MPI_Isend(const void *buf, int count, MPI_Datatype datatype, int dest,
             //  int tag, MPI_Comm comm, MPI_Request *request)
             // printf("Master is sending sending A block (%d, %d) of size %d to proc (%d, %d)\n",
             //        block_row, block_col, m_a[block_row]*n_a[block_col], comm_row, comm_col);
             // printf("sending buffer pointer is null? %lf\n", *a_blocks[block_idx]);
+            MPI_Request request;
             MPI_Isend(a_blocks[block_idx], m_a[block_row]*n_a[block_col], MPI_DOUBLE,
-                     dest_comm_index, block_idx , CART_COMM_WORKING, &request);
+                     dest_comm_index, block_idx, CART_COMM_WORKING, &request);
 
             // Debugging
             // printf("Send A block %d to dest %d\n", block_idx, dest_comm_index);
-            MPI_Wait(&request, MPI_STATUS_IGNORE);
         }
 
         // b blocks
         for (int block_idx=0; block_idx < num_b_blocks; block_idx++){
             // get the block's row and column
+            int block_row, block_col;
             getRowCol(block_idx, num_k_panels, num_n_blocks, &block_row, &block_col);
 
             // derive the destiny processor's row and column
+            int comm_row, comm_col;
             comm_row = block_row % num_m_blocks;
             comm_col = block_col;
 
             // derive the destiny processor's 1D index
-            getIndex(comm_row, comm_col, num_comm_col, &dest_comm_index);
+            int dest_comm_index;
+            getIndex(comm_row, comm_col, num_n_blocks, &dest_comm_index);
 
             // int MPI_Isend(const void *buf, int count, MPI_Datatype datatype, int dest,
             //  int tag, MPI_Comm comm, MPI_Request *request)
             // printf("Sending size %d\n", m_b[block_row]*n_b[block_col]);
             // printf("sending buffer pointer is null? %lf\n", *b_blocks[block_idx]);
+            MPI_Request request;
             MPI_Isend(b_blocks[block_idx], m_b[block_row]*n_b[block_col], MPI_DOUBLE,
                      dest_comm_index, block_idx+num_a_blocks , CART_COMM_WORKING, &request);
 
@@ -530,10 +552,11 @@ int main(int argc, char * argv[])
 
     // worker code starts
     // receieve my A blocks
-    int source_a_block_idx, source_a_block_row, source_a_block_col;
+
     for (int block_k=0; block_k<my_A_panel_num; block_k++){
         // printf("my A block_k=%d\n", block_k);
         // retrieve the global index
+        int source_a_block_idx, source_a_block_row, source_a_block_col;
         source_a_block_row = myrow;
         source_a_block_col = block_k*num_n_blocks + mycol;
         getIndex(source_a_block_row, source_a_block_col, num_k_panels, &source_a_block_idx);
@@ -544,13 +567,12 @@ int main(int argc, char * argv[])
         // printf("buffer pointer is null? %lf\n", *my_A_blocks[block_k]);
         // printf("proc (%d, %d) is recieving A block (%d, %d) of size %d from Master\n",
         //         myrow, mycol, source_a_block_row, source_a_block_col, m_a[source_a_block_row]*n_a[source_a_block_col]);
+        MPI_Request request;
         MPI_Irecv(my_A_blocks[block_k], m_a[source_a_block_row]*n_a[source_a_block_col], MPI_DOUBLE,
                     MASTER, source_a_block_idx, CART_COMM_WORKING, &request);
         MPI_Wait(&request, MPI_STATUS_IGNORE);
     }
     MPI_Barrier(CART_COMM_WORKING);
-    MPI_Barrier(ROW_COMM_WORKING);
-    MPI_Barrier(COL_COMM_WORKING);
 
     // debug recieving B blocks
     // printf("my_B_panel_num=%d\n", my_B_panel_num);
@@ -561,9 +583,9 @@ int main(int argc, char * argv[])
     // recieve my B blocks
     // debug
     // printf("start receive b blocks");
-    int source_b_block_idx, source_b_block_row, source_b_block_col;
     for (int block_k=0; block_k<my_B_panel_num; block_k++){
         // retrieve the global index
+        int source_b_block_idx, source_b_block_row, source_b_block_col;
         source_b_block_row = block_k*num_m_blocks + myrow;
         source_b_block_col = mycol;
         getIndex(source_b_block_row, source_b_block_col, num_n_blocks, &source_b_block_idx);
@@ -572,6 +594,7 @@ int main(int argc, char * argv[])
         // printf("Recieve B block %d at worker %d\n", source_b_block_idx, me);
         // printf("Recieveing size %d\n", m_b[block_k]*n_b[mycol]);
         // printf("buffer pointer is null? %lf\n", *my_B_blocks[block_k]);
+        MPI_Request request;
         MPI_Irecv(my_B_blocks[block_k], m_b[source_b_block_row]*n_b[source_b_block_col], MPI_DOUBLE,
                     MASTER, source_b_block_idx+num_a_blocks, CART_COMM_WORKING, &request);
         MPI_Wait(&request, MPI_STATUS_IGNORE);
@@ -595,8 +618,6 @@ int main(int argc, char * argv[])
 
     /* SUMMA starts */
     // printf("Start SUMMA\n");
-    int row_root, col_root;
-    int row_root_block_index, col_root_block_index;
 
     double *workC = (double *)malloc(m_c[myrow] * n_c[mycol] * sizeof(double));
     // printf("me=%d, myrow=%d, mycol=%d\n", me, myrow, mycol);
@@ -604,11 +625,11 @@ int main(int argc, char * argv[])
         // I am a worker processsor
         // I am looking for the processor that is in the same row with me
         // and has the block A for brodacasting
-        row_root = panel_k % num_n_blocks; // this will return a column index
+        int row_root = panel_k % num_n_blocks; // this will return a column index
 
         // find where the row root worker stores this block
         // aka the index in my_A_blocks
-        row_root_block_index = panel_k/num_m_blocks;
+        int row_root_block_index = panel_k/num_n_blocks;
 
         // copy block A to the working area if I am the row root processor
         double *workA = (double *)malloc(m_a[myrow] * n_a[panel_k] * sizeof(double));
@@ -620,11 +641,11 @@ int main(int argc, char * argv[])
 
         // Now I am looking for the processor that is in the same column with me
         // and has the block B for broadcasting
-        col_root = panel_k % num_m_blocks; // this will return a row index
+        int col_root = panel_k % num_m_blocks; // this will return a row index
 
         // find where the col root worker stores this block
         // aka the index in my_B_blocks
-        col_root_block_index = panel_k/num_n_blocks;
+        int col_root_block_index = panel_k/num_m_blocks;
         // printf("I am panel_k=%d, myrow=%d, mycol=%d, col_root=%d, col_root_block_index=%d\n", panel_k, myrow, mycol, col_root, col_root_block_index);
 
         // copy block B to the working area if I am the col root processor
@@ -636,14 +657,12 @@ int main(int argc, char * argv[])
         // broadcase block_A and block_B
         MPI_Bcast(workA, m_a[myrow]*n_a[panel_k], MPI_DOUBLE, row_root, COL_COMM_WORKING);
         MPI_Bcast(workB, m_b[panel_k]*n_b[mycol], MPI_DOUBLE, col_root, ROW_COMM_WORKING);
-        // MPI_Barrier(ROW_COMM_WORKING);
-        // MPI_Barrier(COL_COMM_WORKING);
 
         // Calculate block_C += block_A * block_B
         matrix_multiply(m_c[myrow], n_c[mycol], n_a[panel_k], workA, workB, workC);
 
-        free(workA);
-        free(workB);
+        // free(workA);
+        // free(workB);
     }
 
     // write workC to the local block of the matrix C
@@ -667,12 +686,14 @@ int main(int argc, char * argv[])
     // int MPI_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
     //           MPI_Op op, int root, MPI_Comm comm)
     double *c_result = zeroInit(m, n);
+    MPI_Barrier(CART_COMM_WORKING);
     MPI_Reduce(c, c_result, m*n, MPI_DOUBLE, MPI_SUM, MASTER, CART_COMM_WORKING);
 
     // MASTER worker print the finale result
     if (me == MASTER){
         printf("Matrix result C:\n");
         print_matrix(c_result, m, n);
+        printf("Finish printing\n");
     }
 
 
@@ -692,14 +713,6 @@ int main(int argc, char * argv[])
     // // }
 
 
-    // printf("\n");
-    // // finalize
-    // printf("free a\n");
-    // free(a);
-    // printf("free b\n");
-    // free(b);
-    // printf("free c\n");
-    // free(c);
 
 
     // MPI_Barrier(CART_COMM_WORKING);
@@ -709,7 +722,8 @@ int main(int argc, char * argv[])
     // free(a);
     // free(b);
     // free(c);
-    //
+    // free(c_result);
+
     // for (int block_k=0; block_k<my_A_panel_num; block_k++){
     //     free(my_A_blocks[block_k]);
     // }
@@ -719,11 +733,7 @@ int main(int argc, char * argv[])
     //     free(my_B_blocks[block_k]);
     // }
     // free(my_B_blocks);
-    //
-    // MPI_Barrier(CART_COMM_WORKING);
-    // MPI_Barrier(ROW_COMM_WORKING);
-    // MPI_Barrier(COL_COMM_WORKING);
-    //
+
     // if (me==MASTER){
     //     for (int i=0; i<num_a_blocks; i++){
     //         free(a_blocks[i]);
@@ -736,10 +746,17 @@ int main(int argc, char * argv[])
     //     free(b_blocks);
     // }
 
+    MPI_Barrier(CART_COMM_WORKING);
+    MPI_Barrier(ROW_COMM_WORKING);
+    MPI_Barrier(COL_COMM_WORKING);
+
     // printf("MPI_Finalize\n");
-    MPI_Comm_free(&CART_COMM_WORKING);
-    MPI_Comm_free(&ROW_COMM_WORKING);
-    MPI_Comm_free(&COL_COMM_WORKING);
+    // MPI_Comm_free(&CART_COMM_WORKING);
+    // MPI_Comm_free(&ROW_COMM_WORKING);
+    // MPI_Comm_free(&COL_COMM_WORKING);
+
+    printf("Finalize at proc %d\n", me);
     MPI_Finalize();
-    printf("The end\n");
+
+    return 0;
 }
