@@ -193,7 +193,6 @@ void matrix_multiply(int m, int n, int k, double* A, double* B, double* C) {
             double sum = 0;
             #pragma omp parallel for reduction(+ : sum)
             for (int kk = 0; kk < k; kk++) {
-                #pragma omp atomic
                 sum += A[i * k + kk] * B[kk * n + j];
             }
             C[i*n+j] = sum;
