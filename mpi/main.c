@@ -142,11 +142,7 @@ void blockRowCol_to_matrixRowCol(int block_row, int block_col, int *blocks_m, in
     }
 }
 
-double** decompose_matrix(double *matrix, int rows, int cols, int block_rows, int block_cols, int* blocks_m, int* blocks_n) {
-    // round up num_blocks
-    int num_blocks_x = (cols+block_cols-1) / block_cols;
-    int num_blocks_y = (rows+block_rows-1) / block_rows;
-
+double** decompose_matrix(double *matrix, int rows, int cols, int num_blocks_y, int num_blocks_x, int* blocks_m, int* blocks_n) {
     // Calculate total number of blocks
     int num_blocks = (num_blocks_x) * (num_blocks_y);
 
@@ -165,13 +161,13 @@ double** decompose_matrix(double *matrix, int rows, int cols, int block_rows, in
     for (int i = 0; i < num_blocks_y; i++) {
         for (int j = 0; j < num_blocks_x; j++) {
             int block_index = i * num_blocks_x + j;
+            // printf("i=%d, j=%d, index=%d\n", i, j, block_index);
             double *block = (result)[block_index];
             int current_block_rows = blocks_m[i];
             int current_block_cols = blocks_n[j];
             for (int y = 0; y < current_block_rows; y++) {
                 for (int x = 0; x < current_block_cols; x++) {
                     // find the offset
-                    // printf("i=%d, j=%d\n", i, j);
                     int offset_row, offset_col;
                     blockRowCol_to_matrixRowCol(i, j, blocks_m, blocks_n, &offset_row, &offset_col);
                     // printf("offset_row=%d, offset_col=%d\n", offset_row, offset_col);
@@ -210,15 +206,38 @@ void print_matrix(double *matrix, int rows, int cols) {
 
 int MASTER = 0;
 
-int main(int argc, char * argv[])
+int main(int argc, char * argv[7])
 {
+    if (argc < 7){
+        printf("Sorry bro! We already passed that test phase.\n");
+        printf("The arguments should be m, k, n, panel_width, num_comm_row, num_comm_col, and np\n");
+        exit(0);
+    }
+
+    /* get matrix size and number of processors */
+    // A: (m, k)
+    // B: (k, n)
+    // C: (m, n)
+    // Showing C = A*B
+    int m = atoi(argv[1]);
+    int k = atoi(argv[2]);
+    int n = atoi(argv[3]);
+    int panel_width = atoi(argv[4]);
+    int num_comm_row = atoi(argv[5]);
+    int num_comm_col = atoi(argv[6]);
+    int coords[2]; /* params to get processor grid */
+
     /* MPI Init Starts */
     // MPI init comm cart
     MPI_Init(&argc, &argv);
     MPI_Comm ROW_COMM, COL_COMM, CART_COMM;
-    int num_comm_row=2, num_comm_col=2, coords[2]; /* params to get processor grid */
     create_cart_grid(num_comm_row, num_comm_col, coords, &CART_COMM);
     cart_sub(CART_COMM, &ROW_COMM, &COL_COMM);
+
+    // get total number of processors
+    // int np;
+    // MPI_Comm_size(CART_COMM, &np);
+
 
     // get my global index
     int me;
@@ -244,10 +263,10 @@ int main(int argc, char * argv[])
     // MPI_Comm_rank( ROW_COMM_WORKING, &myrow );
     // MPI_Comm_rank( COL_COMM_WORKING, &mycol );
 
-    int m, n, k,
-        panel_width;            /* panel width */
+    // int m, n, k,
+    //     panel_width;            /* panel width */
     // double *a, *b;     /* Matrix A and B */
-    double       *c;         /* Matrix C */
+    // double       *c;         /* Matrix C */
 
 
     // init big matrix A, B, C if I am the master worker
@@ -326,12 +345,14 @@ int main(int argc, char * argv[])
     // double a[] = {-1, 1000, 5000, -6000};
     // double b[] = {1000, 0, -1, 2};
 
+    // 10. terminal test case
+    double *a = indexInit(m, k);
+    double *b = indexInit(k, n);
+    double *c = zeroInit(m, n);
+
     // every worker initialize a c because I'm too lazy to send
     // local parts and reshape matrix of blocks
     double **a_blocks, **b_blocks;
-
-    c = zeroInit(m, n);
-
     /* derive auxiliary varaibles */
     // number of blocks in each dimension
     int num_m_blocks = min(num_comm_row, m);
@@ -407,7 +428,7 @@ int main(int argc, char * argv[])
     int row_working = (myrow < num_m_blocks);
     int col_working = (mycol < num_n_blocks);
     int working = row_working && col_working;
-    // printf("Am I working? %d\n", working);
+    // printf("Is proc %d working? %d\n", me, working);
 
     // split MPI_COMM to only let working workers communicate
     MPI_Comm CART_COMM_WORKING, ROW_COMM_WORKING, COL_COMM_WORKING;
@@ -442,8 +463,8 @@ int main(int argc, char * argv[])
         // retrieve global panel index
         int global_panel_index = block_k*num_n_blocks + mycol;
         // debug
-        // printf("Creating A block (%d, %d) of size %d at proc (%d, %d) block %d\n",\
-        //     myrow, global_panel_index, m_a[myrow]*n_a[global_panel_index], myrow, mycol, block_k);
+        // printf("Creating A block (%d, %d) of shape (%d, %d) at proc (%d, %d) block %d\n",\
+            myrow, global_panel_index, m_a[myrow], n_a[global_panel_index], myrow, mycol, block_k);
         my_A_blocks[block_k] = (double *)malloc(m_a[myrow] * n_a[global_panel_index] * sizeof(double));
     }
 
@@ -469,18 +490,18 @@ int main(int argc, char * argv[])
         // initializeAB(m, k, k, n, &a, &b);
         // b = identityInit(n);
         // c = zeroInit(m, n);
-        printf("Matrix A:\n");
-        print_matrix(a, m, k);
+        // printf("Matrix A:\n");
+        // print_matrix(a, m, k);
 
-        printf("Matrix B:\n");
-        print_matrix(b, k, n);
+        // printf("Matrix B:\n");
+        // print_matrix(b, k, n);
 
-        printf("Matrix C:\n");
-        print_matrix(c, m, n);
+        // printf("Matrix C:\n");
+        // print_matrix(c, m, n);
 
         // create block matrices
-        a_blocks = decompose_matrix(a, m, k, m_a[0], panel_width, m_a, n_a);
-        b_blocks = decompose_matrix(b, k, n, panel_width, n_b[0], m_b, n_b);
+        a_blocks = decompose_matrix(a, m, k, num_m_blocks, num_k_panels, m_a, n_a);
+        b_blocks = decompose_matrix(b, k, n, num_k_panels, num_n_blocks, m_b, n_b);
 
         // distribute blocks to workers
         // a blocks
@@ -504,15 +525,13 @@ int main(int argc, char * argv[])
 
             // int MPI_Isend(const void *buf, int count, MPI_Datatype datatype, int dest,
             //  int tag, MPI_Comm comm, MPI_Request *request)
-            // printf("Master is sending sending A block (%d, %d) of size %d to proc (%d, %d)\n",
-            //        block_row, block_col, m_a[block_row]*n_a[block_col], comm_row, comm_col);
+            // printf("Master is sending sending A block (%d, %d) of shape (%d, %d) to proc (%d, %d)\n",
+            //       block_row, block_col, m_a[block_row], n_a[block_col], comm_row, comm_col);
             // printf("sending buffer pointer is null? %lf\n", *a_blocks[block_idx]);
+            // printf("Send A block %d to dest %d\n", block_idx, dest_comm_index);
             MPI_Request request;
             MPI_Isend(a_blocks[block_idx], m_a[block_row]*n_a[block_col], MPI_DOUBLE,
                      dest_comm_index, block_idx, CART_COMM_WORKING, &request);
-
-            // Debugging
-            // printf("Send A block %d to dest %d\n", block_idx, dest_comm_index);
         }
 
         // b blocks
@@ -690,11 +709,11 @@ int main(int argc, char * argv[])
     MPI_Reduce(c, c_result, m*n, MPI_DOUBLE, MPI_SUM, MASTER, CART_COMM_WORKING);
 
     // MASTER worker print the finale result
-    if (me == MASTER){
-        printf("Matrix result C:\n");
-        print_matrix(c_result, m, n);
-        printf("Finish printing\n");
-    }
+    // if (me == MASTER){
+    //     printf("Matrix result C:\n");
+    //     print_matrix(c_result, m, n);
+    //     printf("Finish printing\n");
+    // }
 
 
 
@@ -755,7 +774,7 @@ int main(int argc, char * argv[])
     // MPI_Comm_free(&ROW_COMM_WORKING);
     // MPI_Comm_free(&COL_COMM_WORKING);
 
-    printf("Finalize at proc %d\n", me);
+    // printf("Finalize at proc %d\n", me);
     MPI_Finalize();
 
     return 0;
