@@ -225,12 +225,22 @@ int main(int argc, char * argv[7])
     int panel_width = atoi(argv[4]);
     int num_comm_row = atoi(argv[5]);
     int num_comm_col = atoi(argv[6]);
-    int coords[2]; /* params to get processor grid */
+
+
+    // terminal test case
+    double *a = indexInit(m, k);
+    double *b = indexInit(k, n);
+    double *c = zeroInit(m, n);
+
+    // time measurement
+    double start, end;
+    start = MPI_Wtime();
 
     /* MPI Init Starts */
     // MPI init comm cart
     MPI_Init(&argc, &argv);
     MPI_Comm ROW_COMM, COL_COMM, CART_COMM;
+    int coords[2]; /* params to get processor grid */
     create_cart_grid(num_comm_row, num_comm_col, coords, &CART_COMM);
     cart_sub(CART_COMM, &ROW_COMM, &COL_COMM);
 
@@ -344,11 +354,6 @@ int main(int argc, char * argv[7])
     // panel_width = 1;
     // double a[] = {-1, 1000, 5000, -6000};
     // double b[] = {1000, 0, -1, 2};
-
-    // 10. terminal test case
-    double *a = indexInit(m, k);
-    double *b = indexInit(k, n);
-    double *c = zeroInit(m, n);
 
     // every worker initialize a c because I'm too lazy to send
     // local parts and reshape matrix of blocks
@@ -707,6 +712,11 @@ int main(int argc, char * argv[7])
     double *c_result = zeroInit(m, n);
     MPI_Barrier(CART_COMM_WORKING);
     MPI_Reduce(c, c_result, m*n, MPI_DOUBLE, MPI_SUM, MASTER, CART_COMM_WORKING);
+
+    end = MPI_Wtime();
+    if (me == MASTER){
+        printf("Time elapsed: %f\n", end-start);
+    }
 
     // MASTER worker print the finale result
     // if (me == MASTER){
