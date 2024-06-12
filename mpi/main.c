@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "mpi.h"
+#include <string.h>
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 /* to compile:
@@ -497,11 +498,11 @@ int main(int argc, char * argv[7])
         // initializeAB(m, k, k, n, &a, &b);
         // b = identityInit(n);
         // c = zeroInit(m, n);
-        // printf("Matrix A:\n");
-        // print_matrix(a, m, k);
+        printf("Matrix A:\n");
+        print_matrix(a, m, k);
 
-        // printf("Matrix B:\n");
-        // print_matrix(b, k, n);
+        printf("Matrix B:\n");
+        print_matrix(b, k, n);
 
         // printf("Matrix C:\n");
         // print_matrix(c, m, n);
@@ -662,7 +663,8 @@ int main(int argc, char * argv[7])
         if (mycol == row_root){
             // printf("assigning A block (%d, %d) of size %d from proc (%d, %d) block %d\n",\
              myrow, panel_k, m_a[myrow]*n_a[panel_k], myrow, mycol, row_root_block_index);
-            workA = my_A_blocks[row_root_block_index];
+            memcpy(workA, my_A_blocks[row_root_block_index], m_a[myrow]*n_a[panel_k]* sizeof(double));
+            // workA = my_A_blocks[row_root_block_index];
         }
 
         // Now I am looking for the processor that is in the same column with me
@@ -677,7 +679,8 @@ int main(int argc, char * argv[7])
         // copy block B to the working area if I am the col root processor
         double *workB = (double *)malloc(m_b[panel_k] * n_b[mycol] * sizeof(double));
         if (myrow == col_root){
-            workB = my_B_blocks[col_root_block_index];
+            memcpy(workB, my_B_blocks[col_root_block_index], m_b[panel_k]*n_b[mycol]* sizeof(double));
+            // workB = my_B_blocks[col_root_block_index];
         }
 
         // broadcase block_A and block_B
@@ -687,8 +690,8 @@ int main(int argc, char * argv[7])
         // Calculate block_C += block_A * block_B
         matrix_multiply(m_c[myrow], n_c[mycol], n_a[panel_k], workA, workB, workC);
 
-        // free(workA);
-        // free(workB);
+        free(workA);
+        free(workB);
     }
 
     // write workC to the local block of the matrix C
@@ -721,11 +724,11 @@ int main(int argc, char * argv[7])
     }
 
     // MASTER worker print the finale result
-    // if (me == MASTER){
-    //     printf("Matrix result C:\n");
-    //     print_matrix(c_result, m, n);
-    //     printf("Finish printing\n");
-    // }
+    if (me == MASTER){
+        printf("Matrix result C:\n");
+        print_matrix(c_result, m, n);
+        printf("Finish printing\n");
+    }
 
 
 
@@ -749,6 +752,7 @@ int main(int argc, char * argv[7])
     // MPI_Barrier(CART_COMM_WORKING);
     // MPI_Barrier(ROW_COMM_WORKING);
     // MPI_Barrier(COL_COMM_WORKING);
+    free(workC);
     free(c);
     free(c_result);
 
