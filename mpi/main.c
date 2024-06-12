@@ -755,7 +755,6 @@ int main(int argc, char * argv[7])
     free(workC);
     free(c);
     free(c_result);
-
     for (int block_k=0; block_k<my_A_panel_num; block_k++){
         free(my_A_blocks[block_k]);
     }
@@ -769,7 +768,13 @@ int main(int argc, char * argv[7])
     if (me==MASTER){
         free(a);
         free(b);
+        for (int block_k=0; block_k<num_a_blocks; block_k++){
+            free(a_blocks[block_k]);
+        }
         free(a_blocks);
+        for (int block_k=0; block_k<num_b_blocks; block_k++){
+            free(b_blocks[block_k]);
+        }
         free(b_blocks);
     }
 
