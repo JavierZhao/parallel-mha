@@ -228,13 +228,8 @@ int main(int argc, char * argv[7])
 
 
     // terminal test case
-    double *a = indexInit(m, k);
-    double *b = indexInit(k, n);
+    double *a, *b;
     double *c = zeroInit(m, n);
-
-    // time measurement
-    double start, end;
-    start = MPI_Wtime();
 
     /* MPI Init Starts */
     // MPI init comm cart
@@ -248,10 +243,17 @@ int main(int argc, char * argv[7])
     // int np;
     // MPI_Comm_size(CART_COMM, &np);
 
-
     // get my global index
     int me;
     MPI_Comm_rank(CART_COMM, &me );
+    if (me == MASTER){
+        a = indexInit(m, k);
+        b = indexInit(k, n);
+    }
+
+    // time measurement
+    double start, end;
+    start = MPI_Wtime();
 
     // get my processor row and col index
     int myrow, mycol;
@@ -747,33 +749,33 @@ int main(int argc, char * argv[7])
     // MPI_Barrier(CART_COMM_WORKING);
     // MPI_Barrier(ROW_COMM_WORKING);
     // MPI_Barrier(COL_COMM_WORKING);
-    //
-    // free(a);
-    // free(b);
-    // free(c);
-    // free(c_result);
 
-    // for (int block_k=0; block_k<my_A_panel_num; block_k++){
-    //     free(my_A_blocks[block_k]);
-    // }
-    // free(my_A_blocks);
-    //
-    // for (int block_k=0; block_k<my_B_panel_num; block_k++){
-    //     free(my_B_blocks[block_k]);
-    // }
-    // free(my_B_blocks);
+    free(a);
+    free(b);
+    free(c);
+    free(c_result);
 
-    // if (me==MASTER){
-    //     for (int i=0; i<num_a_blocks; i++){
-    //         free(a_blocks[i]);
-    //     }
-    //     free(a_blocks);
-    //
-    //     for (int i=0; i<num_b_blocks; i++){
-    //         free(b_blocks[i]);
-    //     }
-    //     free(b_blocks);
-    // }
+    for (int block_k=0; block_k<my_A_panel_num; block_k++){
+        free(my_A_blocks[block_k]);
+    }
+    free(my_A_blocks);
+
+    for (int block_k=0; block_k<my_B_panel_num; block_k++){
+        free(my_B_blocks[block_k]);
+    }
+    free(my_B_blocks);
+
+    if (me==MASTER){
+        for (int i=0; i<num_a_blocks; i++){
+            free(a_blocks[i]);
+        }
+        free(a_blocks);
+
+        for (int i=0; i<num_b_blocks; i++){
+            free(b_blocks[i]);
+        }
+        free(b_blocks);
+    }
 
     MPI_Barrier(CART_COMM_WORKING);
     MPI_Barrier(ROW_COMM_WORKING);
