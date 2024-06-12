@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "mpi.h"
 #include <string.h>
+#include <omp.h>
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 /* to compile:
@@ -159,6 +160,7 @@ double** decompose_matrix(double *matrix, int rows, int cols, int num_blocks_y, 
 
     // Decompose the matrix into blocks and flatten each block
     // block x is the x index of block
+    // #pragma omp parallel for collapse(4)
     for (int i = 0; i < num_blocks_y; i++) {
         for (int j = 0; j < num_blocks_x; j++) {
             int block_index = i * num_blocks_x + j;
@@ -185,13 +187,16 @@ double** decompose_matrix(double *matrix, int rows, int cols, int num_blocks_y, 
 }
 
 void matrix_multiply(int m, int n, int k, double* A, double* B, double* C) {
-    #pragma omp parallel for collapse(3)
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
+            double sum = 0;
+            #pragma omp parallel for reduction(+ : sum)
             for (int kk = 0; kk < k; kk++) {
                 #pragma omp atomic
-                C[i*n+j] += A[i * k + kk] * B[kk * n + j];
+                sum += A[i * k + kk] * B[kk * n + j];
             }
+            C[i*n+j] = sum;
         }
     }
 }
