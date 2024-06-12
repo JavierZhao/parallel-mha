@@ -698,16 +698,12 @@ int main(int argc, char * argv[7])
     // every blocks other than workC will be zeros
     int row_offset, col_offset;
     blockRowCol_to_matrixRowCol(myrow, mycol, m_c, n_c, &row_offset, &col_offset);
-    int C_matrix_i, C_matrix_j, C_matrix_index;
-    int workC_index;
+
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < m_c[myrow]; i++) {
         for (int j = 0; j < n_c[mycol]; j++){
-            workC_index = i * n_c[mycol] + j;
-            C_matrix_i = row_offset+i;
-            C_matrix_j = col_offset+j;
-            C_matrix_index = C_matrix_i * n + C_matrix_j;
-
-            c[C_matrix_index] = workC[workC_index];
+            #pragma omp atomic
+            c[(row_offset+i)*n+row_offset+i] = workC[i*n_c[mycol]+j];
         }
     }
 
