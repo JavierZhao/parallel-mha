@@ -702,7 +702,6 @@ int main(int argc, char * argv[7])
     #pragma omp parallel for collapse(2)
     for (int i = 0; i < m_c[myrow]; i++) {
         for (int j = 0; j < n_c[mycol]; j++){
-            #pragma omp atomic
             c[(row_offset+i)*n+row_offset+i] = workC[i*n_c[mycol]+j];
         }
     }
