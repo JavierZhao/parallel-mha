@@ -749,9 +749,6 @@ int main(int argc, char * argv[7])
     // MPI_Barrier(CART_COMM_WORKING);
     // MPI_Barrier(ROW_COMM_WORKING);
     // MPI_Barrier(COL_COMM_WORKING);
-
-    free(a);
-    free(b);
     free(c);
     free(c_result);
 
@@ -766,15 +763,8 @@ int main(int argc, char * argv[7])
     free(my_B_blocks);
 
     if (me==MASTER){
-        for (int i=0; i<num_a_blocks; i++){
-            free(a_blocks[i]);
-        }
-        free(a_blocks);
-
-        for (int i=0; i<num_b_blocks; i++){
-            free(b_blocks[i]);
-        }
-        free(b_blocks);
+        free(a);
+        free(b);
     }
 
     MPI_Barrier(CART_COMM_WORKING);
