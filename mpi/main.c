@@ -498,11 +498,11 @@ int main(int argc, char * argv[7])
         // initializeAB(m, k, k, n, &a, &b);
         // b = identityInit(n);
         // c = zeroInit(m, n);
-        printf("Matrix A:\n");
-        print_matrix(a, m, k);
-
-        printf("Matrix B:\n");
-        print_matrix(b, k, n);
+        // printf("Matrix A:\n");
+        // print_matrix(a, m, k);
+        //
+        // printf("Matrix B:\n");
+        // print_matrix(b, k, n);
 
         // printf("Matrix C:\n");
         // print_matrix(c, m, n);
@@ -724,11 +724,11 @@ int main(int argc, char * argv[7])
     }
 
     // MASTER worker print the finale result
-    if (me == MASTER){
-        printf("Matrix result C:\n");
-        print_matrix(c_result, m, n);
-        printf("Finish printing\n");
-    }
+    // if (me == MASTER){
+    //     printf("Matrix result C:\n");
+    //     print_matrix(c_result, m, n);
+    //     printf("Finish printing\n");
+    // }
 
 
 
