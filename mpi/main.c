@@ -765,6 +765,8 @@ int main(int argc, char * argv[7])
     if (me==MASTER){
         free(a);
         free(b);
+        free(a_blocks);
+        free(b_blocks);
     }
 
     MPI_Barrier(CART_COMM_WORKING);
