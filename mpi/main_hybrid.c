@@ -188,11 +188,10 @@ void matrix_multiply(int m, int n, int k, double* A, double* B, double* C) {
     #pragma omp parallel for collapse(3)
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
-            double sum = 0.0;
             for (int kk = 0; kk < k; kk++) {
-                sum += A[i * k + kk] * B[kk * n + j];
+                #pragma omp atomic
+                C[i*n+j] += A[i * k + kk] * B[kk * n + j];
             }
-            C[i * n + j] += sum;
         }
     }
 }
