@@ -1,0 +1,23 @@
+Running MultiHeadAttention with num_heads = 4, d_model = 1024, seq_length = 128
+Run 1 of 10
+Execution time: 1.88467 seconds
+Run 2 of 10
+Execution time: 2.85039 seconds
+Run 3 of 10
+Execution time: 4.77513 seconds
+Run 4 of 10
+Execution time: 1.69094 seconds
+Run 5 of 10
+Execution time: 1.67153 seconds
+Run 6 of 10
+Execution time: 1.73221 seconds
+Run 7 of 10
+Execution time: 1.6681 seconds
+Run 8 of 10
+Execution time: 1.68217 seconds
+Run 9 of 10
+Execution time: 1.70148 seconds
+Run 10 of 10
+Execution time: 1.69945 seconds
+Average execution time: 2.13561 seconds
+Output matches expected output
