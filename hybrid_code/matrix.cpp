@@ -42,7 +42,7 @@ Matrix Matrix::multiply(const Matrix& a, const Matrix& b) {
 
     int errcodes[4];
     // printf("rowsA: %d, colsA: %d, colsB: %d\n", rowsA, colsA, colsB);
-    printf("Spawning processes with parameters:\n");
+    // printf("Spawning processes with parameters:\n");
     MPI_Comm_spawn("./summa", args, 4, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &intercomm, errcodes);
     // printf("MPI processes spawned successfully\n");
 
@@ -56,7 +56,7 @@ Matrix Matrix::multiply(const Matrix& a, const Matrix& b) {
     MPI_Recv(C_flat, rowsA * colsB, MPI_DOUBLE, 0, 1, intercomm, MPI_STATUS_IGNORE);
     // MPI_Request request;
     // MPI_Irecv(C_flat, rowsA * colsB, MPI_DOUBLE, 0, 0, intercomm, &request);
-    printf("Result matrix received\n");
+    // printf("Result matrix received\n");
 
     // Print received matrix C for verification
     // std::cout << "Received Matrix C:\n";
