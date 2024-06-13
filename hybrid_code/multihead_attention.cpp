@@ -1,5 +1,6 @@
 #include "multihead_attention.h"
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <omp.h>
@@ -104,9 +105,11 @@ Matrix MultiHeadAttention::compute(const Matrix& x) {
     std::vector<Matrix> heads = split_heads(x);
     std::vector<Matrix> Q_heads(num_heads), K_heads(num_heads), V_heads(num_heads);
 
+    std::cout << "Obtaining QKV: \n";
     #pragma omp parallel for
     for (int i = 0; i < num_heads; ++i) {
         Q_heads[i] = Matrix::multiply(x, Wq[i]);
+        std::cout << "finished Q\n";
         K_heads[i] = Matrix::multiply(x, Wk[i]);
         V_heads[i] = Matrix::multiply(x, Wv[i]);
         // Apply broadcast and add biases
@@ -116,7 +119,6 @@ Matrix MultiHeadAttention::compute(const Matrix& x) {
         Q_heads[i] += bq[i].broadcast(Q_heads[i].rows);
         K_heads[i] += bk[i].broadcast(K_heads[i].rows);
         V_heads[i] += bv[i].broadcast(V_heads[i].rows);
-        
     }
 
     // std::cout << "Checking Q: \n";
@@ -135,6 +137,7 @@ Matrix MultiHeadAttention::compute(const Matrix& x) {
     // }
 
     std::vector<Matrix> attention_heads(num_heads);
+    std::cout << "Calculating attention_heads: \n";
     #pragma omp parallel for
     for (int i = 0; i < num_heads; ++i) {
         attention_heads[i] = scaled_dot_product_attention(Q_heads[i], K_heads[i], V_heads[i]);
@@ -155,6 +158,7 @@ Matrix MultiHeadAttention::compute(const Matrix& x) {
         }
     }
 
+    std::cout << "Calculating output: \n";
     Matrix output = Matrix::multiply(concat_attention, Wo);
     // print dimensions of output and bo
     // std::cout << "Calculating output. Adding Matrices with dimensions: " 

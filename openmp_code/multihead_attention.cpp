@@ -1,5 +1,6 @@
 #include "multihead_attention.h"
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <omp.h>
@@ -71,7 +72,7 @@ Matrix MultiHeadAttention::scaled_dot_product_attention(const Matrix& Q, const M
     Matrix qk = Matrix::multiply(Q, kt);
 
     double dk = static_cast<double>(K.cols);
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (auto& row : qk.data)
         for (auto& val : row)
             val /= std::sqrt(dk);

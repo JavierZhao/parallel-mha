@@ -23,6 +23,7 @@ Matrix Matrix::multiply(const Matrix& a, const Matrix& b) {
     int colsB = b.cols;
 
     int panel_width = (int) rowsA / 10; // Panel width for block decomposition
+    // int panel_width = 2;
     int num_comm_row = 2; // Number of rows in processor grid
     int num_comm_col = 2; // Number of columns in processor grid
     int np = num_comm_row * num_comm_col; // Total number of processes (2x2 grid)
@@ -41,6 +42,7 @@ Matrix Matrix::multiply(const Matrix& a, const Matrix& b) {
 
     int errcodes[4];
     // printf("rowsA: %d, colsA: %d, colsB: %d\n", rowsA, colsA, colsB);
+    printf("Spawning processes with parameters:\n");
     MPI_Comm_spawn("./summa", args, 4, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &intercomm, errcodes);
     // printf("MPI processes spawned successfully\n");
 
@@ -51,7 +53,10 @@ Matrix Matrix::multiply(const Matrix& a, const Matrix& b) {
 
     // Receive the result matrix C from the master process
     // Assuming matrix C is already allocated and ready to receive data
-    MPI_Recv(C_flat, rowsA * colsB, MPI_DOUBLE, MPI_ANY_SOURCE, 0, intercomm, MPI_STATUS_IGNORE);
+    MPI_Recv(C_flat, rowsA * colsB, MPI_DOUBLE, 0, 1, intercomm, MPI_STATUS_IGNORE);
+    // MPI_Request request;
+    // MPI_Irecv(C_flat, rowsA * colsB, MPI_DOUBLE, 0, 0, intercomm, &request);
+    printf("Result matrix received\n");
 
     // Print received matrix C for verification
     // std::cout << "Received Matrix C:\n";
@@ -70,9 +75,20 @@ Matrix Matrix::multiply(const Matrix& a, const Matrix& b) {
     // free memory
     delete[] A_flat;
     delete[] B_flat;
-    delete[] C_flat;
+    // delete[] C_flat;
 
     return result;
+
+    // if (a.cols != b.rows) throw std::invalid_argument("Incompatible dimensions for multiplication");
+    // Matrix result(a.rows, b.cols);
+    // for (int i = 0; i < result.rows; ++i) {
+    //     for (int j = 0; j < result.cols; ++j) {
+    //         for (int k = 0; k < a.cols; ++k) {
+    //             result.data[i][j] += a.data[i][k] * b.data[k][j];
+    //         }
+    //     }
+    // }
+    // return result;
 }
 
 double* Matrix::flatten_data(const std::vector<std::vector<double> >& matrix_data, int rows, int cols) {

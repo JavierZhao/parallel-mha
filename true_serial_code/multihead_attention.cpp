@@ -1,5 +1,6 @@
 #include "multihead_attention.h"
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include <vector>
 

@@ -8,6 +8,7 @@ Matrix::Matrix(int rows, int cols) : rows(rows), cols(cols), data(rows, std::vec
 Matrix Matrix::multiply(const Matrix& a, const Matrix& b) {
     if (a.cols != b.rows) throw std::invalid_argument("Incompatible dimensions for multiplication");
     Matrix result(a.rows, b.cols);
+    #pragma omp parallel for collapse(3)
     for (int i = 0; i < result.rows; ++i) {
         for (int j = 0; j < result.cols; ++j) {
             for (int k = 0; k < a.cols; ++k) {
