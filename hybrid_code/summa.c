@@ -202,7 +202,7 @@ int MASTER = 0;
 
 int summa(int argc, char *argv[], int rowsA, int colsA, int colsB, int panel_width, int num_comm_row, int num_comm_col, double* A, double* B, double* C)
 {
-    printf("summa starts\n");
+    // printf("summa starts\n");
     /* get matrix size and number of processors */
     // A: (m, k)
     // B: (k, n)
@@ -826,43 +826,46 @@ int main(int argc, char *argv[]) {
     summa(argc, argv, rowsA, colsA, colsB, panel_width, num_comm_row, num_comm_col, A, B, C);
     // MPI_Barrier(intercomm);
 
-    if (MPI_COMM_WORLD) {
-        // printf("Matrix C:\n");
-        // // if C is null, print error message
-        // if (C == NULL) {
-        //     printf("Matrix C is NULL\n");
-        // }
-        // printf("rowsA=%d, colsB=%d\n", rowsA, colsB);
-        // for (int i = 0; i < rowsA; i++) {
-        //     for (int j = 0; j < colsB; j++) {
-        //         printf("%.2f ", C[i * colsB + j]);
-        //     }
-        //     printf("\n");
-        // }
-        if (C[0] != 0) {
-            printf("Matrix C is not zero\n");
-            MPI_Send(C, rowsA * colsB, MPI_DOUBLE, 0, 0, parent_comm);
-        }
-    }
+    // if (MPI_COMM_WORLD) {
+    //     printf("Matrix C:\n");
+    //     // if C is null, print error message
+    //     if (C == NULL) {
+    //         printf("Matrix C is NULL\n");
+    //     }
+    //     printf("rowsA=%d, colsB=%d\n", rowsA, colsB);
+    //     for (int i = 0; i < rowsA; i++) {
+    //         for (int j = 0; j < colsB; j++) {
+    //             printf("%.2f ", C[i * colsB + j]);
+    //         }
+    //         printf("\n");
+    //     }
+    //     // if (C[0] != 0) {
+    //     //     printf("Matrix C is not zero\n");
+    //     //     MPI_Send(C, rowsA * colsB, MPI_DOUBLE, 0, 0, parent_comm);
+    //     // }
+    // }
 
     // determine if I am master or worker
-    // int me;
-    // MPI_Comm_rank(MPI_COMM_WORLD, &me);
-    // if (me == MASTER) {
-    //     printf("Sending back matrix C\n");
-    //     if (C != NULL) {
-    //         MPI_Send(C, rowsA * colsB, MPI_DOUBLE, 0, 0, parent_comm);
-    //     } else {
-    //         fprintf(stderr, "Matrix C is NULL, cannot send back.\n");
-    //         MPI_Abort(MPI_COMM_WORLD, 1);
-    //     }
-    // }
+    int me;
+    MPI_Comm_rank(MPI_COMM_WORLD, &me);
+    // printf("me=%d\n", me);
+    if (me == 0) {
+        // MPI_Request request;
+        if (C != NULL) {
+            // printf("Sending back matrix C\n");
+            MPI_Send(C, rowsA * colsB, MPI_DOUBLE, 0, 1, parent_comm);
+            // MPI_Isend(C, rowsA * colsB, MPI_DOUBLE, 0, 0, parent_comm, &request);
+        } else {
+            printf("Matrix C is NULL, cannot send back.\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+    }
     
 
     free(A);
     free(B);
     free(C);
 
-    // MPI_Finalize();  // Finalize the MPI environment
+    MPI_Finalize();  // Finalize the MPI environment
     return 0;
 }

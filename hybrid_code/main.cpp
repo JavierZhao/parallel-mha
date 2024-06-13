@@ -14,23 +14,23 @@
 // }
 
 // Helper function to load a matrix from a CSV file
-// Matrix load_csv(const std::string& file_path, int rows, int cols) {
-//     Matrix matrix(rows, cols);
-//     std::ifstream file(file_path);
-//     std::string line;
-//     int row = 0;
-//     while (getline(file, line)) {
-//         std::stringstream stream(line);
-//         std::string cell;
-//         int col = 0;
-//         while (getline(stream, cell, ',')) {
-//             matrix.data[row][col++] = std::stod(cell);
-//         }
-//         ++row;
-//     }
-//     file.close();
-//     return matrix;
-// }
+Matrix load_csv(const std::string& file_path, int rows, int cols) {
+    Matrix matrix(rows, cols);
+    std::ifstream file(file_path);
+    std::string line;
+    int row = 0;
+    while (getline(file, line)) {
+        std::stringstream stream(line);
+        std::string cell;
+        int col = 0;
+        while (getline(stream, cell, ',')) {
+            matrix.data[row][col++] = std::stod(cell);
+        }
+        ++row;
+    }
+    file.close();
+    return matrix;
+}
 
 // void send_matrix(double* matrix, int rows, int cols, MPI_Comm& intercomm, int rank) {
 //     MPI_Send(matrix, rows * cols, MPI_DOUBLE, rank, 0, intercomm);
@@ -39,7 +39,9 @@
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);  // Initialize MPI environment
-
+    int me;
+    MPI_Comm_rank(MPI_COMM_WORLD, &me);
+    printf("Hello from process %d\n", me);
     // test new matrix multiply with summa
     // int rowsA = 4;
     // int colsA = 4;
@@ -179,8 +181,6 @@ int main(int argc, char *argv[]) {
     // delete[] A;
     // delete[] B;
     // delete[] C;
-
-    
 
     int num_heads = 4;
     int d_model = 1024;
